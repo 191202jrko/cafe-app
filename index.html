@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>카페 판매 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F5F0;--surface:#FFF;--surface2:#F0EDE6;--border:#E2DDD6;--border2:#CBC5BC;
+  --text:#1A1714;--text2:#6B6560;--text3:#9C9690;
+  --accent:#2D5A27;--accent-light:#EBF2EA;--accent-text:#1E3E1A;
+  --danger:#8B2020;--danger-light:#F5EAEA;
+  --warn-bg:#FDF3E3;--warn-border:#E8C97A;--warn-text:#7A5200;
+  --sheet:#0F5132;--sheet-light:#E8F5EE;--sheet-text:#0F5132;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans KR',sans-serif;
+  --r:10px;--rl:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--text);}
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 12px;display:flex;align-items:stretch;position:sticky;top:0;z-index:50;}
+.nav-tab{flex:1;padding:13px 0;font-size:13px;font-weight:500;color:var(--text3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s,border-color .2s;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+.page{flex:1;padding:16px;display:none;flex-direction:column;gap:12px;padding-bottom:100px;}
+.page.active{display:flex;}
+
+.hcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.hcard-title{font-size:18px;font-weight:600;}
+.hcard-sub{font-size:12px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+.badge{font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.badge-green{background:var(--accent-light);color:var(--accent-text);}
+.badge-gray{background:var(--surface2);color:var(--text2);}
+.badge-sheet{background:var(--sheet-light);color:var(--sheet-text);}
+
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+.stat-label{font-size:11px;color:var(--text3);letter-spacing:.03em;text-transform:uppercase;margin-bottom:6px;}
+.stat-value{font-size:22px;font-weight:600;font-family:var(--mono);}
+.stat-value.green{color:var(--accent);}
+
+.today-log{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.tl-header{padding:10px 14px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.log-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:8px;}
+.log-row:last-child{border-bottom:none;}
+.log-time{font-family:var(--mono);font-size:12px;color:var(--text3);flex-shrink:0;width:46px;}
+.log-items{flex:1;font-size:13px;color:var(--text2);line-height:1.4;}
+.log-amt{font-family:var(--mono);font-size:13px;font-weight:500;flex-shrink:0;}
+.icon-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3);flex-shrink:0;}
+.icon-btn:active{background:var(--danger-light);color:var(--danger);border-color:var(--danger);}
+
+.menu-list{display:flex;flex-direction:column;gap:6px;}
+.menu-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s,background .15s;}
+.menu-item.has-qty{border-color:var(--accent);background:var(--accent-light);}
+.menu-icon{width:38px;height:38px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.menu-item.has-qty .menu-icon{background:rgba(45,90,39,.12);}
+.menu-info{flex:1;min-width:0;}
+.menu-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.menu-price{font-size:12px;color:var(--text3);margin-top:1px;font-family:var(--mono);}
+.menu-item.has-qty .menu-price{color:var(--accent-text);}
+.qty-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.qty-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:20px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:background .1s,transform .1s;}
+.qty-btn:active{background:var(--surface2);transform:scale(.94);}
+.menu-item.has-qty .qty-btn{border-color:var(--accent);color:var(--accent-text);background:rgba(255,255,255,.7);}
+.qty-num{font-size:16px;font-weight:600;min-width:24px;text-align:center;font-family:var(--mono);}
+
+.bottom-bar{padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:40;}
+.btn{flex:1;padding:14px;border-radius:var(--r);font-size:15px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s,transform .1s;font-family:var(--sans);}
+.btn:active{transform:scale(.97);}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-ghost{background:var(--surface2);color:var(--text2);flex:0 0 auto;padding:14px 16px;}
+.btn-outline{background:none;border:1px solid var(--border2);color:var(--text2);}
+.btn-sheet{background:var(--sheet);color:#fff;}
+
+.slabel{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:0 2px;}
+
+/* ADMIN */
+.admin-sub-nav{display:flex;gap:4px;background:var(--surface2);border-radius:var(--r);padding:4px;}
+.admin-sub-tab{flex:1;padding:8px 4px;border:none;background:none;border-radius:6px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:background .15s,color .15s;}
+.admin-sub-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.admin-sub-page{display:none;flex-direction:column;gap:12px;}
+.admin-sub-page.active{display:flex;}
+
+.admin-sheet-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.admin-row{display:flex;align-items:center;padding:0 14px;border-bottom:1px solid var(--border);gap:8px;min-height:52px;}
+.admin-row:last-child{border-bottom:none;}
+.admin-row-icon{font-size:18px;width:26px;text-align:center;flex-shrink:0;cursor:pointer;}
+.a-sep{width:1px;height:20px;background:var(--border);flex-shrink:0;}
+.admin-input{flex:1;border:none;background:none;font-size:14px;font-family:var(--sans);color:var(--text);outline:none;padding:14px 0;}
+.admin-input::placeholder{color:var(--text3);}
+.price-input{width:80px;text-align:right;font-family:var(--mono);flex:0 0 80px;}
+.admin-del{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.admin-del:active{background:var(--danger-light);color:var(--danger);border-color:var(--danger);}
+.add-btn{width:100%;padding:13px;border:1.5px dashed var(--border2);border-radius:var(--r);background:none;color:var(--text3);font-size:14px;font-family:var(--sans);cursor:pointer;}
+.add-btn:active{color:var(--accent);border-color:var(--accent);}
+
+/* BULK EDIT */
+.bulk-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;overflow:hidden;}
+.bulk-entry-header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:8px;}
+.bulk-entry-time{font-family:var(--mono);font-size:12px;color:var(--text3);width:46px;flex-shrink:0;}
+.bulk-entry-items{flex:1;font-size:13px;color:var(--text2);}
+.bulk-entry-amt{font-family:var(--mono);font-size:13px;font-weight:500;flex-shrink:0;}
+
+/* SHEET SYNC */
+.sheet-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.sheet-row{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);gap:12px;}
+.sheet-row:last-child{border-bottom:none;}
+.sheet-row-left{flex:1;}
+.sheet-row-label{font-size:14px;font-weight:500;}
+.sheet-row-sub{font-size:12px;color:var(--text3);margin-top:3px;font-family:var(--mono);}
+.sheet-row-action{flex-shrink:0;}
+
+.sync-preview{background:var(--sheet-light);border:1px solid #A8D5B8;border-radius:var(--r);padding:14px;font-size:13px;color:var(--sheet-text);line-height:1.8;}
+.sync-preview b{font-weight:600;}
+
+.date-range-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.date-range-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);gap:10px;}
+.date-range-row:last-child{border-bottom:none;}
+.date-range-label{font-size:13px;color:var(--text2);width:36px;flex-shrink:0;}
+.date-range-input{flex:1;border:none;background:none;font-size:14px;font-family:var(--mono);color:var(--text);outline:none;padding:2px 0;}
+.date-range-input:focus{color:var(--accent);}
+
+/* REPORTS */
+.report-filters{display:flex;gap:8px;}
+.filter-select{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);font-size:13px;font-family:var(--sans);color:var(--text);outline:none;appearance:none;cursor:pointer;}
+.filter-input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);font-size:13px;font-family:var(--mono);color:var(--text);outline:none;}
+.filter-input:focus,.filter-select:focus{border-color:var(--accent);}
+.report-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.report-table{width:100%;border-collapse:collapse;font-size:13px;}
+.report-table th{padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;background:var(--surface2);border-bottom:1px solid var(--border);}
+.report-table td{padding:10px 12px;border-bottom:1px solid var(--border);}
+.report-table tr:last-child td{border-bottom:none;}
+.report-table tr.sub td{background:var(--accent-light);font-weight:600;color:var(--accent-text);}
+.tr{text-align:right;}
+.mono{font-family:var(--mono);}
+.chart-bar-wrap{display:flex;flex-direction:column;gap:8px;}
+.chart-row{display:flex;align-items:center;gap:8px;font-size:13px;}
+.chart-label{width:86px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2);}
+.chart-bar-bg{flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.chart-bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease;}
+.chart-val{width:52px;flex-shrink:0;text-align:right;font-family:var(--mono);font-size:12px;color:var(--text3);}
+
+/* SETTINGS */
+.setting-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.setting-row{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);gap:12px;}
+.setting-row:last-child{border-bottom:none;}
+.setting-label{flex:1;font-size:14px;font-weight:500;}
+.setting-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+.setting-input{flex:0 0 110px;border:none;border-bottom:1px solid var(--border2);background:none;font-size:14px;font-family:var(--mono);color:var(--text);outline:none;padding:4px 0;letter-spacing:2px;text-align:right;}
+.setting-input:focus{border-bottom-color:var(--accent);}
+
+/* URL */
+.url-field{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;align-items:center;overflow:hidden;}
+.url-field input{flex:1;border:none;background:none;padding:12px 14px;font-size:12px;font-family:var(--mono);color:var(--text2);outline:none;}
+.url-label{padding:0 12px;font-size:11px;color:var(--text3);flex-shrink:0;border-right:1px solid var(--border);height:100%;display:flex;align-items:center;}
+
+.guide{background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:var(--r);padding:14px;font-size:13px;color:var(--warn-text);line-height:1.8;}
+.guide b{font-weight:600;}
+.guide code{font-family:var(--mono);font-size:12px;background:rgba(0,0,0,.07);padding:1px 5px;border-radius:4px;}
+.syslog{font-family:var(--mono);font-size:12px;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;min-height:40px;line-height:1.8;white-space:pre-wrap;word-break:break-all;}
+.syslog-ok{color:var(--accent);}
+.syslog-err{color:var(--danger);}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+.modal-backdrop.hidden{display:none;}
+.modal{background:var(--surface);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:480px;padding:20px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));max-height:85vh;overflow-y:auto;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:16px;}
+.modal-menu-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.modal-menu-row:last-child{border-bottom:none;}
+.modal-menu-name{flex:1;font-size:14px;}
+.modal-qty-ctrl{display:flex;align-items:center;gap:8px;}
+.modal-qty-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border2);background:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);}
+.modal-qty-btn:active{background:var(--surface2);}
+.modal-qty-num{font-size:15px;font-weight:600;min-width:22px;text-align:center;font-family:var(--mono);}
+.modal-actions{display:flex;gap:8px;margin-top:16px;}
+
+/* LOCK */
+.lock-screen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;}
+.lock-screen.hidden{display:none;}
+.lock-icon{font-size:40px;}
+.lock-title{font-size:18px;font-weight:600;}
+.lock-sub{font-size:13px;color:var(--text3);}
+.lock-input{width:100%;max-width:280px;padding:14px;border:1px solid var(--border2);border-radius:var(--r);font-size:22px;text-align:center;font-family:var(--mono);letter-spacing:8px;outline:none;background:var(--surface);}
+.lock-input:focus{border-color:var(--accent);}
+.lock-btn{width:100%;max-width:280px;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:500;cursor:pointer;font-family:var(--sans);}
+.lock-err{font-size:13px;color:var(--danger);min-height:20px;}
+
+.divider{height:1px;background:var(--border);}
+.empty{text-align:center;padding:28px 16px;color:var(--text3);font-size:14px;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .2s,transform .2s;z-index:500;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* progress bar */
+.progress-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:none;}
+.progress-wrap.show{display:block;}
+.progress-label{font-size:13px;color:var(--text2);margin-bottom:8px;}
+.progress-bar-bg{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:var(--sheet);border-radius:4px;transition:width .3s ease;width:0%;}
+.progress-detail{font-size:12px;color:var(--text3);margin-top:6px;font-family:var(--mono);}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- LOCK -->
+<div class="lock-screen" id="lock-screen">
+  <div class="lock-icon">🔐</div>
+  <div class="lock-title">관리자 인증</div>
+  <div class="lock-sub">관리자 비밀번호를 입력해주세요</div>
+  <input class="lock-input" type="password" id="lock-input" maxlength="10" placeholder="••••"
+    onkeydown="if(event.key==='Enter')checkPw()">
+  <div class="lock-err" id="lock-err"></div>
+  <button class="lock-btn" onclick="checkPw()">확인</button>
+  <div style="font-size:12px;color:var(--text3);margin-top:4px;">기본 비밀번호: <span style="font-family:var(--mono);">1234</span></div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-backdrop hidden" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">판매 내역 수정</div>
+    <div class="modal-sub" id="edit-modal-sub"></div>
+    <div id="modal-menu-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveEdit()">수정 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-tab active" onclick="switchTab('sales')">판매 입력</button>
+  <button class="nav-tab" onclick="switchTab('reports')">판매 데이터</button>
+  <button class="nav-tab" onclick="requireAdmin()">관리자</button>
+</nav>
+
+<!-- ══ SALES ══ -->
+<div class="page active" id="page-sales">
+  <div class="hcard">
+    <div>
+      <div class="hcard-title">오늘의 판매</div>
+      <div class="hcard-sub" id="today-label">—</div>
+    </div>
+    <span class="badge badge-green" id="sheet-status">시트 미연결</span>
+  </div>
+  <div class="summary">
+    <div class="stat"><div class="stat-label">오늘 누적 잔수</div><div class="stat-value" id="total-qty">0</div></div>
+    <div class="stat"><div class="stat-label">오늘 누적 금액</div><div class="stat-value green" id="total-amt">₩0</div></div>
+  </div>
+  <div class="today-log" id="today-log-wrap" style="display:none;">
+    <div class="tl-header">
+      <span>오늘 저장 내역</span>
+      <span id="today-log-count" style="font-family:var(--mono);"></span>
+    </div>
+    <div id="today-log-list"></div>
+  </div>
+  <div class="slabel">메뉴 입력</div>
+  <div class="menu-list" id="menu-list"></div>
+  <div style="flex:1"></div>
+</div>
+
+<!-- ══ REPORTS ══ -->
+<div class="page" id="page-reports">
+  <div class="hcard"><div><div class="hcard-title">판매 데이터</div></div></div>
+  <div class="report-filters">
+    <select class="filter-select" id="report-mode" onchange="onModeChange()">
+      <option value="day">날짜별</option>
+      <option value="month">월별</option>
+    </select>
+    <input class="filter-input" type="date" id="report-date" onchange="renderReport()">
+    <input class="filter-input" type="month" id="report-month" style="display:none;" onchange="renderReport()">
+  </div>
+  <div id="report-content"></div>
+  <div style="flex:1"></div>
+</div>
+
+<!-- ══ ADMIN ══ -->
+<div class="page" id="page-admin">
+  <div class="admin-sub-nav">
+    <button class="admin-sub-tab active" onclick="switchAdminSub('menus')">메뉴</button>
+    <button class="admin-sub-tab" onclick="switchAdminSub('bulk')">판매수정</button>
+    <button class="admin-sub-tab" onclick="switchAdminSub('sync')">시트전송</button>
+    <button class="admin-sub-tab" onclick="switchAdminSub('settings')">설정</button>
+  </div>
+
+  <!-- 메뉴 관리 -->
+  <div class="admin-sub-page active" id="admin-menus">
+    <div class="admin-sheet-wrap" id="admin-list"></div>
+    <button class="add-btn" onclick="addMenu()">+ 메뉴 추가</button>
+  </div>
+
+  <!-- 판매 수정 -->
+  <div class="admin-sub-page" id="admin-bulk">
+    <input class="filter-input" type="date" id="bulk-date" onchange="renderBulk()" style="width:100%;">
+    <div class="slabel">건별 수정 · 삭제</div>
+    <div id="bulk-entries"></div>
+    <div class="slabel">날짜 합계 직접 입력</div>
+    <div id="bulk-total-section"></div>
+  </div>
+
+  <!-- 시트 전송 -->
+  <div class="admin-sub-page" id="admin-sync">
+    <!-- URL 설정 -->
+    <div class="slabel">Apps Script URL <span style="font-weight:400;color:var(--text3);">— 최초 1회만 입력</span></div>
+    <div class="url-field">
+      <span class="url-label">URL</span>
+      <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/..." oninput="saveUrl()">
+    </div>
+    <div class="guide" id="setup-guide">
+      <b>최초 설정 방법</b><br>
+      1. 구글 스프레드시트 → <code>확장 프로그램</code> → <code>Apps Script</code><br>
+      2. 아래 "코드 복사" → 붙여넣기 → 저장(💾)<br>
+      3. <code>배포</code> → <code>새 배포</code> → 유형: <code>웹 앱</code><br>
+      4. 액세스: <code>모든 사용자</code> → 배포 → URL 복사 후 위 칸에 입력<br>
+      <span style="color:var(--warn-text);font-weight:600;">✓ 이후에는 URL 입력 불필요 — 아래 전송 버튼만 사용</span>
+    </div>
+    <button class="btn btn-outline" style="padding:12px;font-size:13px;" onclick="copyScript()">📋 Apps Script 코드 복사</button>
+
+    <div class="divider"></div>
+
+    <!-- 전송 구간 선택 -->
+    <div class="slabel">전송할 기간 선택</div>
+    <div class="date-range-wrap">
+      <div class="date-range-row">
+        <span class="date-range-label">시작</span>
+        <input class="date-range-input" type="date" id="sync-from" onchange="updateSyncPreview()">
+      </div>
+      <div class="date-range-row">
+        <span class="date-range-label">종료</span>
+        <input class="date-range-input" type="date" id="sync-to" onchange="updateSyncPreview()">
+      </div>
+    </div>
+
+    <!-- 빠른 선택 버튼 -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 12px;font-size:12px;" onclick="setRange('today')">오늘</button>
+      <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 12px;font-size:12px;" onclick="setRange('week')">이번 주</button>
+      <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 12px;font-size:12px;" onclick="setRange('month')">이번 달</button>
+      <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 12px;font-size:12px;" onclick="setRange('all')">전체</button>
+    </div>
+
+    <!-- 전송 미리보기 -->
+    <div class="sync-preview" id="sync-preview">기간을 선택하면 전송할 데이터를 확인할 수 있어요.</div>
+
+    <!-- 진행 상태 -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-label" id="progress-label">전송 중...</div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar"></div></div>
+      <div class="progress-detail" id="progress-detail"></div>
+    </div>
+
+    <!-- 시스템 로그 -->
+    <div class="slabel">전송 로그</div>
+    <div class="syslog" id="syslog">대기 중...</div>
+  </div>
+
+  <!-- 설정 -->
+  <div class="admin-sub-page" id="admin-settings">
+    <div class="slabel">관리자 비밀번호 변경</div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div class="setting-label">현재 비밀번호</div>
+        <input class="setting-input" type="password" id="pw-current" maxlength="10" placeholder="현재 비번">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">새 비밀번호</div>
+        <input class="setting-input" type="password" id="pw-new" maxlength="10" placeholder="새 비번">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">비밀번호 확인</div>
+        <input class="setting-input" type="password" id="pw-confirm" maxlength="10" placeholder="재입력">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="padding:14px;" onclick="changePw()">비밀번호 변경</button>
+    <div class="divider"></div>
+    <div class="slabel">데이터 관리</div>
+    <div class="setting-group">
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">판매 데이터 내보내기</div>
+          <div class="setting-sub">JSON 파일로 백업</div>
+        </div>
+        <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 14px;font-size:13px;" onclick="exportData()">내보내기</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label" style="color:var(--danger);">판매 데이터 전체 삭제</div>
+          <div class="setting-sub">복구 불가 — 신중하게</div>
+        </div>
+        <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 14px;font-size:13px;color:var(--danger);border-color:var(--danger);" onclick="clearAllData()">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1"></div>
+</div>
+
+<!-- BOTTOM BARS -->
+<div class="bottom-bar" id="bar-sales">
+  <button class="btn btn-ghost" style="flex:0 0 auto;padding:14px 18px;" onclick="resetQty()">↺</button>
+  <button class="btn btn-primary" onclick="doSave()">판매 저장</button>
+</div>
+<div class="bottom-bar" id="bar-reports" style="display:none;"></div>
+<div class="bottom-bar" id="bar-admin-menus" style="display:none;">
+  <button class="btn btn-primary" onclick="saveMenus()">메뉴 저장</button>
+</div>
+<div class="bottom-bar" id="bar-admin-bulk" style="display:none;">
+  <button class="btn btn-primary" onclick="saveBulkTotal()">합계 저장</button>
+</div>
+<div class="bottom-bar" id="bar-admin-sync" style="display:none;">
+  <button class="btn btn-sheet" id="sync-btn" onclick="doSync()">📤 구글 시트로 전송</button>
+</div>
+<div class="bottom-bar" id="bar-admin-settings" style="display:none;"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ STATE ═══ */
+let adminUnlocked = false;
+let curAdminSub = 'menus';
+let editingId = null;
+let editQty = [];
+let bulkTotalQty = {};
+
+let menus = JSON.parse(localStorage.getItem('cafe_menus')||'null') || [
+  {name:"아메리카노",price:4500,icon:"☕"},
+  {name:"카페라떼",price:5000,icon:"🥛"},
+  {name:"카푸치노",price:5500,icon:"☕"},
+  {name:"바닐라라떼",price:5500,icon:"🍦"},
+  {name:"카라멜마키아토",price:6000,icon:"🍮"},
+  {name:"녹차라떼",price:5500,icon:"🍵"},
+  {name:"딸기스무디",price:6500,icon:"🍓"},
+  {name:"초코라떼",price:5500,icon:"🍫"},
+  {name:"에이드",price:6000,icon:"🍋"},
+  {name:"티(허브/홍차)",price:4500,icon:"🫖"}
+];
+let qty = menus.map(()=>0);
+let salesLog = JSON.parse(localStorage.getItem('cafe_sales')||'[]');
+
+/* ═══ DATE HELPERS ═══ */
+function p2(n){return String(n).padStart(2,'0');}
+const _now = new Date();
+const TODAY_KEY = `${_now.getFullYear()}-${p2(_now.getMonth()+1)}-${p2(_now.getDate())}`;
+
+function dateLabel(d){
+  const dt = new Date(d+'T00:00:00');
+  const w = ['일','월','화','수','목','금','토'][dt.getDay()];
+  return `${dt.getFullYear()}.${p2(dt.getMonth()+1)}.${p2(dt.getDate())} (${w})`;
+}
+function isoToday(){return TODAY_KEY;}
+function isoWeekStart(){
+  const d=new Date(_now);d.setDate(d.getDate()-d.getDay());
+  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+}
+function isoMonthStart(){return `${_now.getFullYear()}-${p2(_now.getMonth()+1)}-01`;}
+function isoAllStart(){
+  if(!salesLog.length) return TODAY_KEY;
+  return salesLog.map(s=>s.date).sort()[0];
+}
+
+(function(){
+  const w=['일','월','화','수','목','금','토'][_now.getDay()];
+  document.getElementById('today-label').textContent=
+    `${_now.getFullYear()}.${p2(_now.getMonth()+1)}.${p2(_now.getDate())} (${w})`;
+  document.getElementById('report-date').value=TODAY_KEY;
+  document.getElementById('report-month').value=`${_now.getFullYear()}-${p2(_now.getMonth()+1)}`;
+  document.getElementById('bulk-date').value=TODAY_KEY;
+  document.getElementById('sync-from').value=TODAY_KEY;
+  document.getElementById('sync-to').value=TODAY_KEY;
+  const url=localStorage.getItem('script_url')||'';
+  document.getElementById('script-url').value=url;
+  updateSheetBadge(!!url);
+})();
+
+/* ═══ URL / BADGE ═══ */
+function saveUrl(){
+  const url=document.getElementById('script-url').value.trim();
+  localStorage.setItem('script_url',url);
+  updateSheetBadge(!!url);
+  updateSyncPreview();
+}
+function updateSheetBadge(ok){
+  const s=document.getElementById('sheet-status');
+  s.textContent=ok?'시트 연결됨':'시트 미연결';
+  s.className='badge '+(ok?'badge-sheet':'badge-gray');
+}
+
+/* ═══ LOCK ═══ */
+function requireAdmin(){
+  if(adminUnlocked){switchTab('admin');return;}
+  document.getElementById('lock-screen').classList.remove('hidden');
+  document.getElementById('lock-input').value='';
+  document.getElementById('lock-err').textContent='';
+  setTimeout(()=>document.getElementById('lock-input').focus(),100);
+}
+function checkPw(){
+  const pw=localStorage.getItem('admin_pw')||'1234';
+  if(document.getElementById('lock-input').value===pw){
+    document.getElementById('lock-screen').classList.add('hidden');
+    adminUnlocked=true; switchTab('admin');
+  } else {
+    document.getElementById('lock-err').textContent='비밀번호가 틀렸어요';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+  }
+}
+
+/* ═══ PW CHANGE ═══ */
+function changePw(){
+  const cur=document.getElementById('pw-current').value;
+  const nw=document.getElementById('pw-new').value;
+  const cnf=document.getElementById('pw-confirm').value;
+  if(cur!==(localStorage.getItem('admin_pw')||'1234')){toast('현재 비밀번호가 틀렸어요');return;}
+  if(!nw||nw.length<4){toast('새 비밀번호는 4자 이상으로 입력해주세요');return;}
+  if(nw!==cnf){toast('새 비밀번호가 일치하지 않아요');return;}
+  localStorage.setItem('admin_pw',nw);
+  ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value='');
+  toast('비밀번호 변경 완료 ✓');
+}
+
+/* ═══ TAB ═══ */
+function switchTab(t){
+  document.querySelectorAll('.nav-tab').forEach((el,i)=>
+    el.classList.toggle('active',['sales','reports','admin'][i]===t));
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');
+  document.getElementById('bar-sales').style.display=t==='sales'?'flex':'none';
+  document.getElementById('bar-reports').style.display=t==='reports'?'flex':'none';
+  ['menus','bulk','sync','settings'].forEach(s=>{
+    const el=document.getElementById('bar-admin-'+s);
+    if(el) el.style.display=(t==='admin'&&s===curAdminSub)?'flex':'none';
+  });
+  if(t==='admin'){renderAdmin();renderBulk();updateSyncPreview();}
+  if(t==='reports') renderReport();
+}
+function switchAdminSub(s){
+  curAdminSub=s;
+  document.querySelectorAll('.admin-sub-tab').forEach((el,i)=>
+    el.classList.toggle('active',['menus','bulk','sync','settings'][i]===s));
+  document.querySelectorAll('.admin-sub-page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('admin-'+s).classList.add('active');
+  ['menus','bulk','sync','settings'].forEach(k=>{
+    const el=document.getElementById('bar-admin-'+k);
+    if(el) el.style.display=(k===s)?'flex':'none';
+  });
+  if(s==='sync') updateSyncPreview();
+  if(s==='bulk') renderBulk();
+}
+
+/* ═══ SALES ═══ */
+function renderSales(){
+  const list=document.getElementById('menu-list');
+  if(!menus.length){list.innerHTML='<div class="empty">관리자 탭에서 메뉴를 추가해주세요</div>';return;}
+  list.innerHTML=menus.map((m,i)=>`
+    <div class="menu-item ${qty[i]>0?'has-qty':''}">
+      <div class="menu-icon">${m.icon||'☕'}</div>
+      <div class="menu-info">
+        <div class="menu-name">${m.name}</div>
+        <div class="menu-price">₩${Number(m.price).toLocaleString()}</div>
+      </div>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="chg(${i},-1)">−</button>
+        <span class="qty-num">${qty[i]}</span>
+        <button class="qty-btn" onclick="chg(${i},1)">+</button>
+      </div>
+    </div>`).join('');
+  renderTodaySummary();
+  renderTodayLog();
+}
+function chg(i,d){qty[i]=Math.max(0,qty[i]+d);renderSales();}
+function resetQty(){qty=menus.map(()=>0);renderSales();toast('초기화 완료');}
+function renderTodaySummary(){
+  const saved=salesLog.filter(s=>s.date===TODAY_KEY);
+  let tq=saved.reduce((s,e)=>s+e.rows.reduce((a,r)=>a+r.qty,0),0);
+  let ta=saved.reduce((s,e)=>s+e.total,0);
+  qty.forEach((q,i)=>{tq+=q;ta+=q*Number(menus[i].price);});
+  document.getElementById('total-qty').textContent=tq;
+  document.getElementById('total-amt').textContent='₩'+ta.toLocaleString();
+}
+function renderTodayLog(){
+  const entries=salesLog.filter(s=>s.date===TODAY_KEY);
+  const wrap=document.getElementById('today-log-wrap');
+  if(!entries.length){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('today-log-count').textContent=entries.length+'건';
+  document.getElementById('today-log-list').innerHTML=[...entries].reverse().map(e=>{
+    const t=new Date(e.ts);
+    return `<div class="log-row">
+      <span class="log-time">${p2(t.getHours())}:${p2(t.getMinutes())}</span>
+      <span class="log-items">${e.rows.map(r=>`${r.name}×${r.qty}`).join(' · ')}</span>
+      <span class="log-amt">₩${e.total.toLocaleString()}</span>
+      <button class="icon-btn" onclick="openEdit('${e.id}')">✎</button>
+      <button class="icon-btn" onclick="deleteEntry('${e.id}')">×</button>
+    </div>`;
+  }).join('');
+}
+async function doSave(){
+  const rows=menus.map((m,i)=>({name:m.name,price:Number(m.price),qty:qty[i],amt:Number(m.price)*qty[i]})).filter(r=>r.qty>0);
+  if(!rows.length){toast('수량을 입력해주세요');return;}
+  const total=rows.reduce((s,r)=>s+r.amt,0);
+  salesLog.push({id:'s'+Date.now(),date:TODAY_KEY,ts:Date.now(),rows,total});
+  persist();
+  qty=menus.map(()=>0);
+  renderSales();
+  toast('판매 저장 완료 ✓');
+}
+function deleteEntry(id){
+  if(!confirm('이 판매 내역을 삭제할까요?')) return;
+  salesLog=salesLog.filter(s=>s.id!==id);
+  persist();renderSales();renderBulk();renderReport();toast('삭제 완료');
+}
+
+/* ═══ EDIT MODAL ═══ */
+function openEdit(id){
+  const entry=salesLog.find(s=>s.id===id);
+  if(!entry) return;
+  editingId=id;
+  editQty=menus.map(m=>{const r=entry.rows.find(r=>r.name===m.name);return r?r.qty:0;});
+  const t=new Date(entry.ts);
+  document.getElementById('edit-modal-sub').textContent=
+    `${dateLabel(entry.date)}  ${p2(t.getHours())}:${p2(t.getMinutes())} 저장건`;
+  document.getElementById('modal-menu-list').innerHTML=menus.map((m,i)=>`
+    <div class="modal-menu-row">
+      <span style="font-size:16px;margin-right:6px;">${m.icon||'☕'}</span>
+      <span class="modal-menu-name">${m.name}<br>
+        <span style="font-size:11px;color:var(--text3);font-family:var(--mono);">₩${Number(m.price).toLocaleString()}</span>
+      </span>
+      <div class="modal-qty-ctrl">
+        <button class="modal-qty-btn" onclick="eChg(${i},-1)">−</button>
+        <span class="modal-qty-num" id="eqty-${i}">${editQty[i]}</span>
+        <button class="modal-qty-btn" onclick="eChg(${i},1)">+</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+function eChg(i,d){editQty[i]=Math.max(0,editQty[i]+d);const el=document.getElementById('eqty-'+i);if(el)el.textContent=editQty[i];}
+function closeModal(){document.getElementById('edit-modal').classList.add('hidden');editingId=null;}
+function saveEdit(){
+  if(!editingId) return;
+  const rows=menus.map((m,i)=>({name:m.name,price:Number(m.price),qty:editQty[i],amt:Number(m.price)*editQty[i]})).filter(r=>r.qty>0);
+  if(!rows.length){toast('수량을 1개 이상 입력해주세요');return;}
+  const idx=salesLog.findIndex(s=>s.id===editingId);
+  if(idx>=0) salesLog[idx]={...salesLog[idx],rows,total:rows.reduce((s,r)=>s+r.amt,0)};
+  persist();closeModal();renderSales();renderBulk();renderReport();toast('수정 완료 ✓');
+}
+
+/* ═══ BULK EDIT ═══ */
+function renderBulk(){
+  const d=document.getElementById('bulk-date').value;
+  const entries=salesLog.filter(s=>s.date===d);
+  const entriesEl=document.getElementById('bulk-entries');
+  entriesEl.innerHTML=entries.length?entries.map(e=>{
+    const t=new Date(e.ts);
+    return `<div class="bulk-entry">
+      <div class="bulk-entry-header">
+        <span class="bulk-entry-time">${p2(t.getHours())}:${p2(t.getMinutes())}</span>
+        <span class="bulk-entry-items">${e.rows.map(r=>`${r.name}×${r.qty}`).join(' · ')}</span>
+        <span class="bulk-entry-amt">₩${e.total.toLocaleString()}</span>
+        <button class="icon-btn" onclick="openEdit('${e.id}')">✎</button>
+        <button class="icon-btn" onclick="deleteEntry('${e.id}')">×</button>
+      </div>
+    </div>`;
+  }).join(''):'<div class="empty">해당 날짜의 판매 내역이 없어요</div>';
+
+  // aggregate
+  const agg={};menus.forEach(m=>{agg[m.name]=0;});
+  entries.forEach(e=>e.rows.forEach(r=>{if(agg[r.name]!==undefined)agg[r.name]+=r.qty;}));
+  if(!bulkTotalQty[d]) bulkTotalQty[d]={...agg};
+
+  document.getElementById('bulk-total-section').innerHTML=`
+    <div class="admin-sheet-wrap">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="background:var(--surface2);">
+          <th style="padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);">메뉴</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);">현재</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);">수정</th>
+          <th style="padding:9px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);">금액</th>
+        </tr></thead>
+        <tbody>
+          ${menus.map((m,i)=>{
+            const cur=agg[m.name]||0;
+            const ev=bulkTotalQty[d]?.[m.name]??cur;
+            return `<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px 12px;font-size:13px;">${m.icon||''}${m.name}</td>
+              <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:13px;color:var(--text3);">${cur}</td>
+              <td style="padding:6px 8px;text-align:right;">
+                <input type="number" min="0" value="${ev}" style="width:60px;border:1px solid var(--border2);border-radius:6px;padding:4px 6px;font-family:var(--mono);font-size:14px;text-align:right;outline:none;background:var(--surface);"
+                  oninput="onBulkInput('${d}','${m.name}',+this.value,${i})" id="bi-${i}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+              </td>
+              <td style="padding:8px 12px;text-align:right;font-family:var(--mono);font-size:13px;color:var(--text3);" id="ba-${i}">₩${(ev*Number(m.price)).toLocaleString()}</td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:var(--accent-light);">
+            <td style="padding:10px 12px;font-weight:600;color:var(--accent-text);">합계</td>
+            <td style="padding:10px 12px;text-align:right;font-family:var(--mono);font-weight:600;color:var(--accent-text);">${Object.values(agg).reduce((s,v)=>s+v,0)}</td>
+            <td style="padding:10px 12px;text-align:right;font-family:var(--mono);font-weight:600;color:var(--accent-text);" id="bulk-total-qty-cell">—</td>
+            <td style="padding:10px 12px;text-align:right;font-family:var(--mono);font-weight:600;color:var(--accent-text);" id="bulk-total-amt-cell">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:12px;color:var(--text3);padding:0 2px;">"합계 저장" 시 해당 날짜 데이터를 수정 수량 기준 1건으로 재산출해요.</div>`;
+  updateBulkTotals(d);
+}
+function onBulkInput(d,name,val,idx){
+  if(!bulkTotalQty[d]) bulkTotalQty[d]={};
+  bulkTotalQty[d][name]=Math.max(0,isNaN(val)?0:val);
+  const m=menus.find(m=>m.name===name);
+  const el=document.getElementById('ba-'+idx);
+  if(el) el.textContent='₩'+(bulkTotalQty[d][name]*Number(m?.price||0)).toLocaleString();
+  updateBulkTotals(d);
+}
+function updateBulkTotals(d){
+  if(!bulkTotalQty[d]) return;
+  const tq=menus.reduce((s,m)=>s+(bulkTotalQty[d][m.name]||0),0);
+  const ta=menus.reduce((s,m)=>s+(bulkTotalQty[d][m.name]||0)*Number(m.price),0);
+  const qEl=document.getElementById('bulk-total-qty-cell');
+  const aEl=document.getElementById('bulk-total-amt-cell');
+  if(qEl) qEl.textContent=tq+'잔';
+  if(aEl) aEl.textContent='₩'+ta.toLocaleString();
+}
+function saveBulkTotal(){
+  const d=document.getElementById('bulk-date').value;
+  if(!bulkTotalQty[d]){toast('수량을 입력해주세요');return;}
+  const rows=menus.map(m=>({name:m.name,price:Number(m.price),qty:bulkTotalQty[d][m.name]||0,amt:(bulkTotalQty[d][m.name]||0)*Number(m.price)})).filter(r=>r.qty>0);
+  if(!rows.length){toast('수량을 1개 이상 입력해주세요');return;}
+  const total=rows.reduce((s,r)=>s+r.amt,0);
+  const tq=rows.reduce((s,r)=>s+r.qty,0);
+  if(!confirm(`${d} 기존 데이터를 삭제하고\n합계(${tq}잔 / ₩${total.toLocaleString()})로 1건 저장할까요?`)) return;
+  salesLog=salesLog.filter(s=>s.date!==d);
+  salesLog.push({id:'bulk'+Date.now(),date:d,ts:Date.now(),rows,total});
+  persist();delete bulkTotalQty[d];
+  renderBulk();renderSales();renderReport();toast('합계 저장 완료 ✓');
+}
+
+/* ═══ SYNC — 핵심 기능 ═══ */
+function setRange(type){
+  const from=document.getElementById('sync-from');
+  const to=document.getElementById('sync-to');
+  to.value=TODAY_KEY;
+  if(type==='today'){from.value=TODAY_KEY;}
+  else if(type==='week'){from.value=isoWeekStart();}
+  else if(type==='month'){from.value=isoMonthStart();}
+  else if(type==='all'){from.value=isoAllStart();}
+  updateSyncPreview();
+}
+
+function getFilteredForSync(){
+  const from=document.getElementById('sync-from').value;
+  const to=document.getElementById('sync-to').value;
+  if(!from||!to) return [];
+  return salesLog.filter(s=>s.date>=from&&s.date<=to);
+}
+
+function updateSyncPreview(){
+  const entries=getFilteredForSync();
+  const from=document.getElementById('sync-from').value;
+  const to=document.getElementById('sync-to').value;
+  const el=document.getElementById('sync-preview');
+  const url=localStorage.getItem('script_url')||'';
+
+  if(!from||!to){el.innerHTML='기간을 선택해주세요.';return;}
+  if(from>to){el.innerHTML='⚠️ 시작일이 종료일보다 늦어요.';return;}
+
+  const days=[...new Set(entries.map(s=>s.date))].sort();
+  const totalQty=entries.reduce((s,e)=>s+e.rows.reduce((a,r)=>a+r.qty,0),0);
+  const totalAmt=entries.reduce((s,e)=>s+e.total,0);
+
+  if(!entries.length){
+    el.innerHTML=`<b>${from} ~ ${to}</b><br>해당 기간에 판매 데이터가 없어요.`;return;
+  }
+
+  el.innerHTML=`
+    <b>전송 미리보기</b><br>
+    기간: ${from} ~ ${to}<br>
+    해당 날짜: ${days.length}일 (${entries.length}건)<br>
+    총 판매: ${totalQty}잔 / ₩${totalAmt.toLocaleString()}<br>
+    <br>
+    <b>중복 처리:</b> 시트에 이미 있는 저장ID는 건너뛰고, 없는 것만 추가해요.<br>
+    ${!url?'<br>⚠️ Apps Script URL을 먼저 입력해주세요.':'✓ URL 연결됨 — 아래 전송 버튼을 눌러주세요.'}
+  `;
+}
+
+async function doSync(){
+  const url=localStorage.getItem('script_url')||'';
+  if(!url){toast('Apps Script URL을 먼저 입력해주세요');switchAdminSub('sync');return;}
+  const entries=getFilteredForSync();
+  if(!entries.length){toast('전송할 데이터가 없어요');return;}
+
+  const btn=document.getElementById('sync-btn');
+  btn.disabled=true;btn.textContent='전송 중...';
+
+  const pw=document.getElementById('progress-wrap');
+  const pb=document.getElementById('progress-bar');
+  const pl=document.getElementById('progress-label');
+  const pd=document.getElementById('progress-detail');
+  pw.classList.add('show');
+
+  // Step 1: 시트에서 기존 ID 조회
+  setLog('📡 시트에서 기존 저장ID 조회 중...');
+  pl.textContent='기존 데이터 확인 중...';
+  pb.style.width='10%';
+
+  let existingIds = new Set();
+  try{
+    const res=await callScript({action:'getExistingIds'});
+    if(res.ids) existingIds=new Set(res.ids);
+    setLog(`✓ 기존 ID ${existingIds.size}건 확인`,'ok');
+  }catch(e){
+    setLog('기존 ID 조회 실패 — 전체 추가 방식으로 진행','');
+  }
+
+  // Step 2: 중복 제거
+  const toSend=entries.filter(e=>!existingIds.has(e.id));
+  pb.style.width='20%';
+
+  if(!toSend.length){
+    setLog('✓ 전송할 새 데이터 없음 — 이미 모두 시트에 있어요','ok');
+    pl.textContent='완료';pb.style.width='100%';
+    pd.textContent=`${entries.length}건 모두 이미 시트에 존재 — 중복 없음`;
+    btn.disabled=false;btn.textContent='📤 구글 시트로 전송';
+    toast('이미 모두 시트에 있어요');
+    updateSyncPreview();
+    return;
+  }
+
+  setLog(`📤 신규 ${toSend.length}건 전송 시작 (기존 ${existingIds.size}건 건너뜀)...`);
+  pd.textContent=`신규 ${toSend.length}건 / 건너뜀 ${entries.length-toSend.length}건`;
+
+  // Step 3: 청크 단위 전송 (한번에 너무 많으면 timeout)
+  const CHUNK=20;
+  let sent=0,failed=0;
+  const chunks=[];
+  for(let i=0;i<toSend.length;i+=CHUNK) chunks.push(toSend.slice(i,i+CHUNK));
+
+  for(let ci=0;ci<chunks.length;ci++){
+    const chunk=chunks[ci];
+    try{
+      await callScript({action:'batchSaveSales',entries:chunk.map(e=>({
+        entryId:e.id,
+        date:dateLabel(e.date),
+        dateKey:e.date,
+        rows:e.rows,
+        totalQty:e.rows.reduce((s,r)=>s+r.qty,0),
+        totalAmt:e.total
+      }))});
+      sent+=chunk.length;
+    }catch(er){
+      failed+=chunk.length;
+      setLog(`청크 ${ci+1} 오류: ${er.message}`,'err');
+    }
+    const pct=20+Math.round(((ci+1)/chunks.length)*75);
+    pb.style.width=pct+'%';
+    pl.textContent=`전송 중... ${sent+failed}/${toSend.length}건`;
+    pd.textContent=`성공 ${sent}건 / 실패 ${failed}건`;
+    await sleep(300);
+  }
+
+  pb.style.width='100%';
+  if(failed===0){
+    setLog(`✅ 전송 완료! 신규 ${sent}건 추가, 중복 ${entries.length-toSend.length}건 건너뜀`,'ok');
+    pl.textContent='전송 완료 ✓';
+    toast(`전송 완료 — ${sent}건 추가됨`);
+  } else {
+    setLog(`⚠️ 전송 완료 (성공 ${sent}건 / 실패 ${failed}건)`,'err');
+    pl.textContent='일부 실패';
+    toast(`${sent}건 성공, ${failed}건 실패`);
+  }
+
+  btn.disabled=false;btn.textContent='📤 구글 시트로 전송';
+  updateSyncPreview();
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+/* ═══ REPORTS ═══ */
+function onModeChange(){
+  const m=document.getElementById('report-mode').value;
+  document.getElementById('report-date').style.display=m==='day'?'':'none';
+  document.getElementById('report-month').style.display=m==='month'?'':'none';
+  renderReport();
+}
+function renderReport(){
+  const mode=document.getElementById('report-mode').value;
+  let filtered=mode==='day'
+    ?salesLog.filter(s=>s.date===document.getElementById('report-date').value)
+    :salesLog.filter(s=>s.date&&s.date.startsWith(document.getElementById('report-month').value));
+  const content=document.getElementById('report-content');
+  if(!filtered.length){content.innerHTML='<div class="empty">해당 기간의 판매 데이터가 없어요</div>';return;}
+  const agg={};
+  filtered.forEach(s=>s.rows.forEach(r=>{
+    if(!agg[r.name]) agg[r.name]={name:r.name,qty:0,amt:0};
+    agg[r.name].qty+=r.qty;agg[r.name].amt+=r.amt;
+  }));
+  const items=Object.values(agg).sort((a,b)=>b.qty-a.qty);
+  const tq=items.reduce((s,i)=>s+i.qty,0);
+  const ta=items.reduce((s,i)=>s+i.amt,0);
+  const mx=Math.max(...items.map(i=>i.qty),1);
+  const entryRows=mode==='day'?[...filtered].reverse().map(e=>{
+    const t=new Date(e.ts);
+    return `<tr><td class="mono">${p2(t.getHours())}:${p2(t.getMinutes())}</td>
+      <td style="font-size:12px;color:var(--text2);">${e.rows.map(r=>`${r.name}×${r.qty}`).join(' · ')}</td>
+      <td class="mono tr">₩${e.total.toLocaleString()}</td></tr>`;
+  }).join(''):'';
+  content.innerHTML=`
+    <div class="summary">
+      <div class="stat"><div class="stat-label">총 판매 잔수</div><div class="stat-value">${tq}</div></div>
+      <div class="stat"><div class="stat-label">총 판매 금액</div><div class="stat-value green">₩${ta.toLocaleString()}</div></div>
+    </div>
+    <div class="slabel">메뉴별 판매량</div>
+    <div class="chart-bar-wrap">${items.map(i=>`
+      <div class="chart-row">
+        <div class="chart-label">${i.name}</div>
+        <div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${Math.round(i.qty/mx*100)}%"></div></div>
+        <div class="chart-val">${i.qty}잔</div>
+      </div>`).join('')}</div>
+    <div class="slabel">메뉴별 금액</div>
+    <div class="report-table-wrap"><table class="report-table">
+      <thead><tr><th>메뉴</th><th class="tr">수량</th><th class="tr">금액</th></tr></thead>
+      <tbody>
+        ${items.map(i=>`<tr><td>${i.name}</td><td class="mono tr">${i.qty}잔</td><td class="mono tr">₩${i.amt.toLocaleString()}</td></tr>`).join('')}
+        <tr class="sub"><td>합계</td><td class="mono tr">${tq}잔</td><td class="mono tr">₩${ta.toLocaleString()}</td></tr>
+      </tbody>
+    </table></div>
+    ${mode==='day'&&filtered.length?`
+    <div class="slabel">저장 내역 (${filtered.length}건)</div>
+    <div class="report-table-wrap"><table class="report-table">
+      <thead><tr><th>시간</th><th>내역</th><th class="tr">금액</th></tr></thead>
+      <tbody>${entryRows}</tbody>
+    </table></div>`:''}`;
+}
+
+/* ═══ ADMIN MENUS ═══ */
+const ICONS=['☕','🥛','🍦','🍮','🍵','🍓','🍫','🍋','🫖','🧋','🍰','🥐','🧁','🍩','🧃'];
+function renderAdmin(){
+  const list=document.getElementById('admin-list');
+  if(!menus.length){list.innerHTML='<div class="empty">메뉴가 없어요</div>';return;}
+  list.innerHTML=menus.map((m,i)=>`
+    <div class="admin-row">
+      <div class="admin-row-icon" onclick="cycleIcon(${i})">${m.icon||'☕'}</div>
+      <div class="a-sep"></div>
+      <input class="admin-input" type="text" value="${m.name}" placeholder="메뉴명" oninput="menus[${i}].name=this.value">
+      <div class="a-sep"></div>
+      <input class="admin-input price-input" type="number" value="${m.price}" placeholder="가격" oninput="menus[${i}].price=+this.value">
+      <span style="font-size:12px;color:var(--text3);flex-shrink:0;">원</span>
+      <button class="admin-del" onclick="delMenu(${i})">×</button>
+    </div>`).join('');
+}
+const ICONS_LIST=['☕','🥛','🍦','🍮','🍵','🍓','🍫','🍋','🫖','🧋','🍰','🥐','🧁','🍩','🧃'];
+function cycleIcon(i){const c=ICONS_LIST.indexOf(menus[i].icon||'☕');menus[i].icon=ICONS_LIST[(c+1)%ICONS_LIST.length];renderAdmin();}
+function addMenu(){menus.push({name:'',price:0,icon:'☕'});renderAdmin();const rows=document.querySelectorAll('.admin-row');if(rows.length)rows[rows.length-1].querySelector('input').focus();}
+function delMenu(i){if(confirm(`"${menus[i].name}" 삭제할까요?`)){menus.splice(i,1);qty=menus.map(()=>0);renderAdmin();}}
+function saveMenus(){
+  for(let m of menus){if(!m.name.trim()){toast('메뉴명을 입력해주세요');return;}}
+  localStorage.setItem('cafe_menus',JSON.stringify(menus));
+  qty=menus.map(()=>0);renderSales();toast('메뉴 저장 완료');
+}
+
+/* ═══ SHEET ═══ */
+async function callScript(data){
+  const url=localStorage.getItem('script_url')||'';
+  if(!url) throw new Error('URL 미입력');
+  const resp=await fetch(url,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain'}});
+  if(!resp.ok) throw new Error('HTTP '+resp.status);
+  return resp.json().catch(()=>({}));
+}
+function setLog(msg,type=''){
+  const el=document.getElementById('syslog');if(!el)return;
+  const t=new Date().toLocaleTimeString('ko-KR');
+  el.textContent=`[${t}] ${msg}`;
+  el.className='syslog'+(type==='ok'?' syslog-ok':type==='err'?' syslog-err':'');
+}
+function copyScript(){
+  const code=`// 카페 판매 관리 — Apps Script v2 (중복제거 지원)
+const SHEET_SALES = '판매기록';
+const SHEET_MENU  = '메뉴목록';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    let result = {};
+    if (data.action === 'batchSaveSales') result = batchSaveSales(data.entries);
+    else if (data.action === 'getExistingIds')  result = getExistingIds();
+    else if (data.action === 'saveMenus')        result = saveMenus(data.menus);
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({error: err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 기존 저장ID 목록 반환 (중복 체크용)
+function getExistingIds() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_SALES);
+  if (!sheet || sheet.getLastRow() < 2) return { ids: [] };
+  const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1)
+    .getValues().map(r => r[0]).filter(v => v);
+  return { ids: [...new Set(ids)] };
+}
+
+// 여러 건 일괄 저장
+function batchSaveSales(entries) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_SALES);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_SALES);
+    const header = ['저장ID','날짜키','날짜','메뉴명','단가','수량','금액'];
+    sheet.appendRow(header);
+    sheet.getRange(1,1,1,header.length)
+      .setFontWeight('bold').setBackground('#0F5132').setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+  }
+  let added = 0;
+  entries.forEach(entry => {
+    entry.rows.forEach(row => {
+      sheet.appendRow([
+        entry.entryId, entry.dateKey, entry.date,
+        row.name, row.price, row.qty, row.amt
+      ]);
+    });
+    // 소계 행
+    const lr = sheet.getLastRow();
+    sheet.appendRow([entry.entryId, entry.dateKey, entry.date + ' 소계', '', '', entry.totalQty, entry.totalAmt]);
+    sheet.getRange(lr+1,1,1,7).setFontWeight('bold').setBackground('#E8F5EE');
+    added++;
+  });
+  return { ok: true, added };
+}
+
+// 메뉴 목록 동기화
+function saveMenus(menus) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_MENU);
+  if (!sheet) sheet = ss.insertSheet(SHEET_MENU);
+  else sheet.clearContents();
+  sheet.appendRow(['아이콘','메뉴명','가격']);
+  sheet.getRange(1,1,1,3).setFontWeight('bold').setBackground('#0F5132').setFontColor('#FFFFFF');
+  menus.forEach(m => sheet.appendRow([m.icon||'', m.name, m.price]));
+  return { ok: true, count: menus.length };
+}`;
+  navigator.clipboard.writeText(code)
+    .then(()=>toast('코드 복사 완료 ✓'))
+    .catch(()=>{const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('코드 복사 완료 ✓');});
+}
+
+/* ═══ DATA ═══ */
+function persist(){localStorage.setItem('cafe_sales',JSON.stringify(salesLog));}
+function exportData(){
+  const blob=new Blob([JSON.stringify({menus,salesLog},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  const d=new Date();
+  a.download=`cafe-backup-${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.json`;
+  a.click();URL.revokeObjectURL(url);toast('내보내기 완료');
+}
+function clearAllData(){
+  if(!confirm('판매 데이터를 전체 삭제할까요?\n이 작업은 되돌릴 수 없어요.')) return;
+  if(!confirm('정말로 삭제할까요? 마지막 확인이에요.')) return;
+  salesLog=[];persist();renderSales();renderBulk();renderReport();toast('전체 삭제 완료');
+}
+
+/* ═══ TOAST ═══ */
+let _tt;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+/* ═══ INIT ═══ */
+renderSales();
+</script>
+</body>
+</html>
