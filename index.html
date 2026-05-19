@@ -278,11 +278,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--t
     <div class="date-range-wrap">
       <div class="date-range-row">
         <span class="date-range-label" id="range-from-label">시작</span>
-        <input class="date-range-input" type="date" id="excel-from" onchange="updateExcelPreview()">
+        <input class="date-range-input" type="date" id="excel-from" onchange="clearRangeBtns();updateExcelPreview()">
       </div>
       <div class="date-range-row">
         <span class="date-range-label" id="range-to-label">종료</span>
-        <input class="date-range-input" type="date" id="excel-to" onchange="updateExcelPreview()">
+        <input class="date-range-input" type="date" id="excel-to" onchange="clearRangeBtns();updateExcelPreview()">
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -809,13 +809,29 @@ function getExcelEntries(){
   return salesLog.filter(s=>s.date>=from&&s.date<=to);
 }
 function setExcelRange(type){
-  const to=document.getElementById('excel-to');
-  const from=document.getElementById('excel-from');
-  to.value=TODAY_KEY;
-  if(type==='today') from.value=TODAY_KEY;
-  else if(type==='week') from.value=isoWeekStart();
-  else if(type==='month') from.value=isoMonthStart();
-  else if(type==='all') from.value=isoAllStart();
+  const toEl=document.getElementById('excel-to');
+  const fromEl=document.getElementById('excel-from');
+  if(type==='all'){
+    // 전체: 저장된 데이터 중 가장 오래된 날짜 ~ 오늘
+    fromEl.value=isoAllStart();
+    toEl.value=TODAY_KEY;
+  } else if(type==='today'){
+    fromEl.value=TODAY_KEY;
+    toEl.value=TODAY_KEY;
+  } else if(type==='week'){
+    fromEl.value=isoWeekStart();
+    toEl.value=TODAY_KEY;
+  } else if(type==='month'){
+    fromEl.value=isoMonthStart();
+    toEl.value=TODAY_KEY;
+  }
+  ['today','week','month','all'].forEach(k=>{
+    const el=document.getElementById('range-'+k+'-btn');
+    if(!el) return;
+    el.style.background=(k===type)?'var(--accent-light)':'';
+    el.style.color=(k===type)?'var(--accent-text)':'';
+    el.style.borderColor=(k===type)?'var(--accent)':'';
+  });
   updateExcelPreview();
 }
 function updateExcelPreview(){
@@ -831,6 +847,14 @@ function updateExcelPreview(){
   const tq=entries.reduce((s,e)=>s+e.rows.reduce((a,r)=>a+r.qty,0),0);
   const ta=entries.reduce((s,e)=>s+e.total,0);
   el.innerHTML=t('excel_preview',from,to,days,entries.length,tq,ta.toLocaleString());
+}
+// 달력 직접 선택 시 빠른선택 버튼 활성화 해제
+function clearRangeBtns(){
+  ['today','week','month','all'].forEach(k=>{
+    const el=document.getElementById('range-'+k+'-btn');
+    if(!el) return;
+    el.style.background=''; el.style.color=''; el.style.borderColor='';
+  });
 }
 function downloadExcel(){
   const entries=getExcelEntries();
