@@ -298,24 +298,9 @@ html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--t
     <div id="bulk-total-section"></div>
   </div>
 
-  <!-- 시트 전송 -->
+  <!-- 엑셀 다운로드 -->
   <div class="admin-sub-page" id="admin-sync">
-    <div class="slabel">Apps Script URL <span style="font-weight:400;color:var(--text3);" data-i18n="sync_url_hint">— 최초 1회만 입력</span></div>
-    <div class="url-field">
-      <span class="url-label">URL</span>
-      <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/..." oninput="saveUrl()">
-    </div>
-    <div class="guide" id="setup-guide">
-      <b data-i18n="guide_title">최초 설정 방법</b><br>
-      <span data-i18n="guide_steps">1. 구글 스프레드시트 → <code>확장 프로그램</code> → <code>Apps Script</code><br>
-      2. 아래 "코드 복사" → 붙여넣기 → 저장(💾)<br>
-      3. <code>배포</code> → <code>새 배포</code> → 유형: <code>웹 앱</code><br>
-      4. 액세스: <code>모든 사용자</code> → 배포 → URL 복사 후 위 칸에 입력</span><br>
-      <span style="color:var(--warn-text);font-weight:600;" data-i18n="guide_note">✓ 이후에는 URL 입력 불필요 — 아래 전송 버튼만 사용</span>
-    </div>
-    <button class="btn btn-outline" style="padding:12px;font-size:13px;" onclick="copyScript()" data-i18n="btn_copy_script">📋 Apps Script 코드 복사</button>
-    <div class="divider"></div>
-    <div class="slabel" data-i18n="sync_range_label">전송할 기간 선택</div>
+    <div class="slabel">기간 선택</div>
     <div class="date-range-wrap">
       <div class="date-range-row">
         <span class="date-range-label" data-i18n="range_from">시작</span>
@@ -332,14 +317,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--t
       <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 12px;font-size:12px;" onclick="setRange('month')" data-i18n="range_month">이번 달</button>
       <button class="btn btn-outline" style="flex:0 0 auto;padding:8px 12px;font-size:12px;" onclick="setRange('all')" data-i18n="range_all">전체</button>
     </div>
-    <div class="sync-preview" id="sync-preview" data-i18n="sync_preview_default">기간을 선택하면 전송할 데이터를 확인할 수 있어요.</div>
-    <div class="progress-wrap" id="progress-wrap">
-      <div class="progress-label" id="progress-label" data-i18n="progress_sending">전송 중...</div>
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-bar"></div></div>
-      <div class="progress-detail" id="progress-detail"></div>
-    </div>
-    <div class="slabel" data-i18n="sync_log_label">전송 로그</div>
-    <div class="syslog" id="syslog" data-i18n="syslog_idle">대기 중...</div>
+    <div class="sync-preview" id="sync-preview">기간을 선택하면 데이터를 확인할 수 있어요.</div>
   </div>
 
   <!-- 설정 -->
@@ -395,7 +373,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--sans);color:var(--t
   <button class="btn btn-primary" onclick="saveBulkTotal()" data-i18n="btn_save_total">합계 저장</button>
 </div>
 <div class="bottom-bar" id="bar-admin-sync" style="display:none;">
-  <button class="btn btn-sheet" id="sync-btn" onclick="doSync()" data-i18n="btn_sync">📤 구글 시트로 전송</button>
+  <button class="btn btn-primary" onclick="downloadExcel()">📥 엑셀 다운로드</button>
 </div>
 <div class="bottom-bar" id="bar-admin-settings" style="display:none;"></div>
 </div>
@@ -1019,137 +997,84 @@ function updateSyncPreview(){
   const to=document.getElementById('sync-to')?.value;
   const el=document.getElementById('sync-preview');
   if(!el) return;
-  const url=localStorage.getItem('script_url')||'';
-  if(!from||!to){el.innerHTML=t('sync_preview_default');return;}
-  if(from>to){el.innerHTML='⚠️';return;}
-  if(!entries.length){el.innerHTML=`<b>${from} ~ ${to}</b><br>${t('sync_no_data')}`;return;}
+  if(!from||!to){el.innerHTML='기간을 선택하면 데이터를 확인할 수 있어요.';return;}
+  if(from>to){el.innerHTML='⚠️ 시작일이 종료일보다 늦어요.';return;}
+  if(!entries.length){el.innerHTML=`<b>${from} ~ ${to}</b><br>해당 기간의 데이터가 없어요.`;return;}
   const days=[...new Set(entries.map(s=>s.date))].sort();
   const totalQty=entries.reduce((s,e)=>s+e.rows.reduce((a,r)=>a+r.qty,0),0);
   const totalAmt=entries.reduce((s,e)=>s+e.total,0);
-  el.innerHTML=t('sync_preview_content',from,to,days.length,entries.length,totalQty,totalAmt.toLocaleString(),url?t('sync_url_ok'):t('sync_url_missing'));
+  el.innerHTML=`<b>다운로드 미리보기</b><br>기간: ${from} ~ ${to}<br>날짜: ${days.length}일 / ${entries.length}건<br>총 판매: ${totalQty}잔 / ₩${totalAmt.toLocaleString()}<br><br>✓ 아래 버튼으로 엑셀 파일 다운로드`;
 }
-async function doSync(){
-  const url=localStorage.getItem('script_url')||'';
-  if(!url){toast(t('toast_no_url'));return;}
+function downloadExcel(){
   const entries=getFilteredForSync();
-  if(!entries.length){toast(t('toast_no_data'));return;}
-  const btn=document.getElementById('sync-btn');
-  btn.disabled=true;btn.textContent=t('progress_sending');
-  const pw=document.getElementById('progress-wrap');
-  const pb=document.getElementById('progress-bar');
-  const pl=document.getElementById('progress-label');
-  const pd=document.getElementById('progress-detail');
-  pw.classList.add('show');
-  setLog('📡 ...');pl.textContent=t('progress_sending');pb.style.width='10%';
-  let existingIds=new Set();
-  try{const res=await callScript({action:'getExistingIds'});if(res.ids)existingIds=new Set(res.ids);}catch(e){}
-  const toSend=entries.filter(e=>!existingIds.has(e.id));
-  pb.style.width='20%';
-  if(!toSend.length){
-    setLog(`✓ ${t('sync_url_ok')}`,'ok');pl.textContent='✓';pb.style.width='100%';
-    pd.textContent=`${entries.length} ${t('cases')} → ${t('skipped')}`;
-    btn.disabled=false;btn.textContent=t('btn_sync');toast(t('sync_url_ok'));updateSyncPreview();return;
-  }
-  const CHUNK=20;let sent=0,failed=0;
-  const chunks=[];
-  for(let i=0;i<toSend.length;i+=CHUNK) chunks.push(toSend.slice(i,i+CHUNK));
-  for(let ci=0;ci<chunks.length;ci++){
-    const chunk=chunks[ci];
-    try{
-      await callScript({action:'batchSaveSales',entries:chunk.map(e=>({
-        entryId:e.id,date:dateLabel(e.date),dateKey:e.date,rows:e.rows,
-        totalQty:e.rows.reduce((s,r)=>s+r.qty,0),totalAmt:e.total
-      }))});
-      sent+=chunk.length;
-    }catch(er){failed+=chunk.length;}
-    pb.style.width=(20+Math.round(((ci+1)/chunks.length)*75))+'%';
-    pl.textContent=`${t('progress_sending')} ${sent+failed}/${toSend.length}`;
-    pd.textContent=`${t('new_entries')} ${sent} / ${t('skipped')} ${failed}`;
-    await sleep(300);
-  }
-  pb.style.width='100%';
-  if(failed===0){
-    setLog(`✅ ${t('toast_synced',sent)}`,'ok');pl.textContent='✓';
-    toast(t('toast_synced',sent));
-  } else {
-    setLog(`⚠️ ${sent}/${toSend.length}`,'err');
-    toast(`${sent} ok / ${failed} fail`);
-  }
-  btn.disabled=false;btn.textContent=t('btn_sync');updateSyncPreview();
-}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-async function callScript(data){
-  const url=localStorage.getItem('script_url')||'';
-  if(!url) throw new Error('no url');
-  const resp=await fetch(url,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain'}});
-  if(!resp.ok) throw new Error('HTTP '+resp.status);
-  return resp.json().catch(()=>({}));
-}
-function setLog(msg,type=''){
-  const el=document.getElementById('syslog');if(!el)return;
-  const tt=new Date().toLocaleTimeString('ko-KR');
-  el.textContent=`[${tt}] ${msg}`;
-  el.className='syslog'+(type==='ok'?' syslog-ok':type==='err'?' syslog-err':'');
-}
-function copyScript(){
-  const code=`// 카페 판매 관리 — Apps Script v2
-const SHEET_SALES = '판매기록';
-const SHEET_MENU  = '메뉴목록';
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    let result = {};
-    if (data.action === 'batchSaveSales') result = batchSaveSales(data.entries);
-    else if (data.action === 'getExistingIds')  result = getExistingIds();
-    else if (data.action === 'saveMenus')        result = saveMenus(data.menus);
-    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({error: err.message})).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-function getExistingIds() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_SALES);
-  if (!sheet || sheet.getLastRow() < 2) return { ids: [] };
-  const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues().map(r => r[0]).filter(v => v);
-  return { ids: [...new Set(ids)] };
-}
-function batchSaveSales(entries) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_SALES);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_SALES);
-    const header = ['저장ID','날짜키','날짜','메뉴명','단가','수량','금액'];
-    sheet.appendRow(header);
-    sheet.getRange(1,1,1,header.length).setFontWeight('bold').setBackground('#0F5132').setFontColor('#FFFFFF');
-    sheet.setFrozenRows(1);
-  }
-  let added = 0;
-  entries.forEach(entry => {
-    entry.rows.forEach(row => {
-      sheet.appendRow([entry.entryId, entry.dateKey, entry.date, row.name, row.price, row.qty, row.amt]);
+  if(!entries.length){toast('해당 기간의 데이터가 없어요');return;}
+  const from=document.getElementById('sync-from').value;
+  const to=document.getElementById('sync-to').value;
+
+  // CSV 생성 (Excel에서 열 수 있음)
+  const BOM = '\uFEFF'; // 한글 깨짐 방지
+  const rows = [];
+
+  // 헤더
+  rows.push(['날짜','시간','메뉴명','단가','수량','금액','저장ID'].join(','));
+
+  // 데이터 행
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)||a.ts-b.ts).forEach(e=>{
+    const dt=new Date(e.ts);
+    const timeStr=p2(dt.getHours())+':'+p2(dt.getMinutes());
+    e.rows.forEach(r=>{
+      rows.push([
+        e.date, timeStr,
+        '"'+r.name.replace(/"/g,'""')+'"',
+        r.price, r.qty, r.amt, e.id
+      ].join(','));
     });
-    const lr = sheet.getLastRow();
-    sheet.appendRow([entry.entryId, entry.dateKey, entry.date + ' 소계', '', '', entry.totalQty, entry.totalAmt]);
-    sheet.getRange(lr+1,1,1,7).setFontWeight('bold').setBackground('#E8F5EE');
-    added++;
+    // 소계 행
+    rows.push([
+      e.date, timeStr,
+      '"[소계]"', '',
+      e.rows.reduce((s,r)=>s+r.qty,0),
+      e.total, e.id
+    ].join(','));
   });
-  return { ok: true, added };
+
+  // 날짜별 합계
+  rows.push(['','','','','','',''].join(','));
+  rows.push(['"=== 날짜별 합계 ==="','','','','','',''].join(','));
+  rows.push(['"날짜"','"총 잔수"','"총 금액"','','','',''].join(','));
+  const byDate={};
+  entries.forEach(e=>{
+    if(!byDate[e.date]) byDate[e.date]={qty:0,amt:0};
+    e.rows.forEach(r=>{byDate[e.date].qty+=r.qty;byDate[e.date].amt+=r.amt;});
+  });
+  Object.entries(byDate).sort().forEach(([d,v])=>{
+    rows.push([d, v.qty, v.amt,'','','',''].join(','));
+  });
+
+  // 메뉴별 합계
+  rows.push(['','','','','','',''].join(','));
+  rows.push(['"=== 메뉴별 합계 ==="','','','','','',''].join(','));
+  rows.push(['"메뉴명"','"단가"','"총 수량"','"총 금액"','','',''].join(','));
+  const byMenu={};
+  entries.forEach(e=>e.rows.forEach(r=>{
+    if(!byMenu[r.name]) byMenu[r.name]={price:r.price,qty:0,amt:0};
+    byMenu[r.name].qty+=r.qty; byMenu[r.name].amt+=r.amt;
+  }));
+  Object.entries(byMenu).sort((a,b)=>b[1].qty-a[1].qty).forEach(([name,v])=>{
+    rows.push(['"'+name+'"', v.price, v.qty, v.amt,'','',''].join(','));
+  });
+
+  const csv = BOM + rows.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `카페판매_${from}_${to}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`다운로드 완료 (${entries.length}건)`);
 }
-function saveMenus(menus) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_MENU);
-  if (!sheet) sheet = ss.insertSheet(SHEET_MENU);
-  else sheet.clearContents();
-  sheet.appendRow(['아이콘','메뉴명','가격']);
-  sheet.getRange(1,1,1,3).setFontWeight('bold').setBackground('#0F5132').setFontColor('#FFFFFF');
-  menus.forEach(m => sheet.appendRow([m.icon||'', m.name, m.price]));
-  return { ok: true, count: menus.length };
-}`;
-  navigator.clipboard.writeText(code)
-    .then(()=>toast(t('toast_copy_ok')))
-    .catch(()=>{const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast(t('toast_copy_ok'));});
-}
+
 
 /* ═══ DATA ═══ */
 function persist(){localStorage.setItem('cafe_sales',JSON.stringify(salesLog));}
